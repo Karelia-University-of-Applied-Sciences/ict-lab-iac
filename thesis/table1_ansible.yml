@@ -1,0 +1,15 @@
+---
+# Declarative: Ensure app config exists
+# Idempotent by design - only changes what differs
+- name: Ensure app configuration
+  hosts: localhost
+  tasks:
+  - name: Ensure config exists
+    ansible.builtin.copy:
+      dest: ./myapp/config.ini
+      content: |
+        debug=false
+        port=8080
+      owner: appuser
+      group: appuser
+      mode: '0644'
