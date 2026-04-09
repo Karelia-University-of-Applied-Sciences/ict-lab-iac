@@ -1,0 +1,11 @@
+# State files - contain sensitive data
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Variables with secrets
+terraform.tfvars
+*.auto.tfvars
+
+# Lock file (optional - some prefer to commit)
+#.terraform.lock.hcl

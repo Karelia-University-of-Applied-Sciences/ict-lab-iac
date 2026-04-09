@@ -1,0 +1,40 @@
+#cloud-config
+hostname: ${vm_name}
+manage_etc_hosts: true
+ssh_pwauth: true
+# Apply SSH keys directly to the default OS user (ubuntu)
+%{ if length(ubuntu_user.ssh_keys) > 0 ~}
+ssh_authorized_keys:
+%{ for key in ubuntu_user.ssh_keys ~}
+  - ${key}
+%{ endfor ~}
+%{ endif ~}
+
+# Set the password for the default OS user
+%{ if ubuntu_user.password != "" ~}
+chpasswd:
+  list: |
+    ubuntu:${ubuntu_user.password}
+  expire: false
+%{ endif ~}
+
+users:
+  - default
+
+  # Loop through extra users
+%{ for user in concat(admin_users_list, additional_users_list) ~}
+  - name: ${user.name}
+    shell: /bin/bash
+%{ if length(user.ssh_keys) > 0 ~}
+    ssh_authorized_keys:
+%{ for key in user.ssh_keys ~}
+      - ${key}
+%{ endfor ~}
+%{ else ~}
+    password: '${user.password}'
+    lock_passwd: false
+%{ endif ~}
+%{ if user.sudo ~}
+    sudo: ALL=(ALL) NOPASSWD:ALL
+%{ endif ~}
+%{ endfor ~}

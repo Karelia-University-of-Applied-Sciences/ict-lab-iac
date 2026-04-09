@@ -1,0 +1,4 @@
+# Provider
+nutanix_endpoint = "<PRISM_CENTRAL_IP>"
+nutanix_password = "<PASSWORD>"
+nutanix_username = "<USERNAME>"
