@@ -1,6 +1,6 @@
-# ---------------------------------------------------------------------------
-# Provider Variables
-# ---------------------------------------------------------------------------
+# # ---------------------------------------------------------------------------
+# # Provider Variables
+# # ---------------------------------------------------------------------------
 
 # variable "nutanix_endpoint" {
 #   description = "Nutanix Prism Central endpoint"
@@ -24,9 +24,9 @@
 #   type        = string
 # }
 
-# ---------------------------------------------------------------------------
-# Infrastructure Variables
-# ---------------------------------------------------------------------------
+# # ---------------------------------------------------------------------------
+# # Infrastructure Variables
+# # ---------------------------------------------------------------------------
 
 # variable "cluster_uuid" {
 #   description = "UUID of the cluster used for project and VM placement"
@@ -43,9 +43,19 @@
 #   type        = string
 # }
 
-# ---------------------------------------------------------------------------
-# VM Variables
-# ---------------------------------------------------------------------------
+# # ---------------------------------------------------------------------------
+# # VM Variables
+# # ---------------------------------------------------------------------------
+
+# variable "admin_users" {
+#   description = "Shared admin users on all VMs (ansible, deploy, etc)"
+#   type = list(object({
+#     name     = string
+#     password = optional(string, "")
+#     ssh_keys = optional(list(string), [])
+#   }))
+#   default = []
+# }
 
 # variable "disk_size_gb" {
 #   description = "Size of the SCSI boot disk in GB"
@@ -55,6 +65,61 @@
 # variable "image_uuid" {
 #   description = "UUID of the image to boot on VMs"
 #   type        = string
+# }
+
+# variable "memory_size_gb" {
+#   description = "Memory size in GB"
+#   type        = number
+#   default     = 1
+# }
+
+# variable "ngt_iso_uuid" {
+#   description = "UUID of the NGT ISO for guest tools installation"
+#   type        = string
+#   default     = ""
+# }
+
+# variable "num_cores_per_socket" {
+#   description = "Number of cores per CPU socket"
+#   type        = number
+#   default     = 1
+# }
+
+# variable "num_sockets" {
+#   description = "Number of CPU sockets"
+#   type        = number
+#   default     = 1
+# }
+
+# variable "power_state" {
+#   description = "Initial power state of the VM (ON or OFF)"
+#   type        = string
+#   default     = "OFF"
+# }
+
+# variable "ubuntu_password" {
+#   description = "Password for ubuntu admin on all VMs"
+#   sensitive   = true
+#   type        = string
+#   default     = ""
+# }
+
+# variable "ubuntu_ssh_keys" {
+#   description = "SSH keys for ubuntu admin on all VMs"
+#   type        = list(string)
+#   default     = []
+# }
+
+# variable "users" {
+#   description = "List of users, each gets one VM"
+#   type = list(object({
+#     name     = string
+#     expiredate = optional(string, "")
+#     password = optional(string, "")
+#     ssh_keys = optional(list(string), [])
+#     sudo     = optional(bool, false)
+#   }))
+#   default = []
 # }
 
 # variable "vm_name_prefix" {
