@@ -9,3 +9,5 @@ terraform.tfvars
 
 # Lock file (optional - some prefer to commit)
 #.terraform.lock.hcl
+
+.vscode/
