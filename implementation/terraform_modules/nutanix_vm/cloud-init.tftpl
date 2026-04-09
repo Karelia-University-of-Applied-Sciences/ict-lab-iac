@@ -21,8 +21,24 @@ chpasswd:
 users:
   - default
 
-  # Loop through extra users
-%{ for user in concat(admin_users_list, additional_users_list) ~}
+  # Admin users: shared service accounts with passwordless sudo, no expiry
+%{ for user in admin_users_list ~}
+  - name: ${user.name}
+    shell: /bin/bash
+%{ if length(user.ssh_keys) > 0 ~}
+    ssh_authorized_keys:
+%{ for key in user.ssh_keys ~}
+      - ${key}
+%{ endfor ~}
+%{ else ~}
+    password: '${user.password}'
+    lock_passwd: false
+%{ endif ~}
+    sudo: ALL=(ALL) NOPASSWD:ALL
+%{ endfor ~}
+
+  # Per-VM users: optional sudo and optional account expiry
+%{ for user in additional_users_list ~}
   - name: ${user.name}
     shell: /bin/bash
 %{ if length(user.ssh_keys) > 0 ~}
@@ -36,5 +52,8 @@ users:
 %{ endif ~}
 %{ if user.sudo ~}
     sudo: ALL=(ALL) NOPASSWD:ALL
+%{ endif ~}
+%{ if user.expiredate != "" ~}
+    expiredate: '${user.expiredate}'
 %{ endif ~}
 %{ endfor ~}

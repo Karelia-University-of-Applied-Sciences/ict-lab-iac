@@ -28,7 +28,8 @@ module "vm" {
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|----------|
 | `admin_users` | Shared admin users on all VMs (e.g. ansible, deploy) | `list(object)` | `[]` | no |
-| `additional_users` | Per-VM regular users with optional sudo | `list(object)` | `[]` | no |
+| `additional_users` | Per-VM regular users with optional sudo and expiry date | `list(object)` | `[]` | no |
+| `additional_users_expiredate` | Default expiry date for all additional users (`YYYY-MM-DD`); overridden per user; empty string disables expiry | `string` | `""` | no |
 | `cluster_id` | Cluster external ID where the VM will be created | `string` | — | yes |
 | `disk_size_gb` | Boot disk size in GB | `number` | — | yes |
 | `image_uuid` | UUID of the image to boot | `string` | — | yes |
@@ -41,6 +42,16 @@ module "vm" {
 | `subnet_id` | Subnet external ID for the VM NIC | `string` | — | yes |
 | `ubuntu_password` | Password for the default ubuntu user | `string` | `""` | no |
 | `ubuntu_ssh_keys` | SSH public keys for the ubuntu user | `list(string)` | `[]` | no |
+
+### additional_users object
+
+| Field | Description | Type | Default | Required |
+|-------|-------------|------|---------|----------|
+| `name` | Username | `string` | — | yes |
+| `expiredate` | Account expiry date in `YYYY-MM-DD` format; account is locked after this date | `string` | `""` | no |
+| `password` | Login password | `string` | `""` | no |
+| `ssh_keys` | SSH public keys | `list(string)` | `[]` | no |
+| `sudo` | Grant passwordless sudo | `bool` | `false` | no |
 | `vm_name` | Name of the VM | `string` | — | yes |
 
 ## Outputs

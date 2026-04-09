@@ -49,7 +49,8 @@ module "vms" {
   admin_users     = var.admin_users
 
   # This iteration's user
-  additional_users = [each.value]
+  additional_users            = [each.value]
+  additional_users_expiredate = var.additional_users_expiredate
 
   vm_name = "${var.vm_name_prefix}-${each.key}"
 }

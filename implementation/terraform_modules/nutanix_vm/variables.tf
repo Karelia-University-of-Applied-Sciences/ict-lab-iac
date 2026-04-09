@@ -11,12 +11,19 @@ variable "admin_users" {
 variable "additional_users" {
   description = "Regular users with optional sudo access and SSH/password"
   type = list(object({
-    name     = string
-    password = optional(string, "")
-    ssh_keys = optional(list(string), [])
-    sudo     = optional(bool, false)
+    name       = string
+    expiredate = optional(string, "")
+    password   = optional(string, "")
+    ssh_keys   = optional(list(string), [])
+    sudo       = optional(bool, false)
   }))
   default = []
+}
+
+variable "additional_users_expiredate" {
+  description = "Default expiry date applied to all additional users (YYYY-MM-DD); can be overridden per user; empty string disables expiry"
+  type        = string
+  default     = ""
 }
 
 variable "cluster_id" {

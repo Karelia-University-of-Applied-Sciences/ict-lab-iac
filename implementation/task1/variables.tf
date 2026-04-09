@@ -57,6 +57,12 @@ variable "admin_users" {
   default = []
 }
 
+variable "additional_users_expiredate" {
+  description = "Default expiry date applied to all users (YYYY-MM-DD); can be overridden per user; empty string disables expiry"
+  type        = string
+  default     = ""
+}
+
 variable "disk_size_gb" {
   description = "Size of the SCSI boot disk in GB"
   type        = number
@@ -113,10 +119,11 @@ variable "ubuntu_ssh_keys" {
 variable "users" {
   description = "List of users, each gets one VM"
   type = list(object({
-    name     = string
-    password = optional(string, "")
-    ssh_keys = optional(list(string), [])
-    sudo     = optional(bool, false)
+    name       = string
+    expiredate = optional(string, "")
+    password   = optional(string, "")
+    ssh_keys   = optional(list(string), [])
+    sudo       = optional(bool, false)
   }))
   default = []
 }

@@ -18,12 +18,14 @@ locals {
   ]
 
   # Build additional users list from additional_users variable
+  # Per-user expiredate takes precedence; falls back to the module-level default
   additional_users_list = [
     for user in var.additional_users : {
-      name     = user.name
-      ssh_keys = user.ssh_keys
-      password = user.password
-      sudo     = user.sudo
+      name       = user.name
+      expiredate = user.expiredate != "" ? user.expiredate : var.additional_users_expiredate
+      ssh_keys   = user.ssh_keys
+      password   = user.password
+      sudo       = user.sudo
     }
   ]
 
