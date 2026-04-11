@@ -1,0 +1,28 @@
+---
+- name: Install and configure Mosquitto MQTT broker
+  hosts: all
+  become: true
+  tasks:
+    - name: Install mosquitto package
+      ansible.builtin.apt:
+        name: mosquitto
+        state: present
+        update_cache: true
+
+    - name: Deploy mosquitto configuration
+      ansible.builtin.copy:
+        content: |
+          # Listen on the default MQTT port on all interfaces
+          listener 1883
+          # Allow unauthenticated clients
+          allow_anonymous true
+        dest: /etc/mosquitto/conf.d/default.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Enable and start mosquitto service
+      ansible.builtin.service:
+        enabled: true
+        name: mosquitto
+        state: restarted
