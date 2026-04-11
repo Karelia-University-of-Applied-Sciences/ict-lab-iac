@@ -11,3 +11,4 @@ terraform.tfvars
 #.terraform.lock.hcl
 
 .vscode/
+thesis_report/examples
