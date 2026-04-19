@@ -63,7 +63,9 @@ resource "ansible_host" "vm" {
   name     = each.value.vm_name
   groups   = ["task2_vms"]
   variables = {
-    ansible_host = each.value.primary_ipv4
-    ansible_user = "ansible"
+    ansible_host      = each.value.primary_ipv4
+    ansible_user      = "ansible"
+    db_admin_user     = each.key
+    db_admin_password = each.value.user_password
   }
 }

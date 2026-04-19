@@ -1,0 +1,91 @@
+---
+- name: Install and configure MariaDB and phpMyAdmin
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Enable Ubuntu universe apt repository
+      ansible.builtin.apt_repository:
+        repo: 'deb http://archive.ubuntu.com/ubuntu {{ ansible_facts["distribution_release"] }} universe'
+        state: present
+
+    - name: Install MariaDB, Apache2, PHP, and dependencies
+      ansible.builtin.apt:
+        name:
+          - mariadb-server
+          - apache2
+          - php
+          - php-mysql
+          - libapache2-mod-php
+          - python3-pymysql
+          - debconf-utils
+        state: present
+        update_cache: true
+
+    # Preseed debconf answers before installing phpMyAdmin to prevent interactive prompts
+    - name: Preseed phpMyAdmin debconf selections
+      ansible.builtin.debconf:
+        name: '{{ item.name }}'
+        question: '{{ item.question }}'
+        value: '{{ item.value }}'
+        vtype: '{{ item.vtype }}'
+      loop:
+        - name: phpmyadmin
+          question: phpmyadmin/dbconfig-install
+          value: 'true'
+          vtype: boolean
+        - name: phpmyadmin
+          question: phpmyadmin/app-password-confirm
+          value: ''
+          vtype: password
+        - name: phpmyadmin
+          question: phpmyadmin/mysql/admin-pass
+          value: ''
+          vtype: password
+        - name: phpmyadmin
+          question: phpmyadmin/mysql/app-pass
+          value: ''
+          vtype: password
+        - name: phpmyadmin
+          question: phpmyadmin/reconfigure-webserver
+          value: apache2
+          vtype: multiselect
+
+    - name: Install phpMyAdmin
+      ansible.builtin.apt:
+        name: phpmyadmin
+        state: present
+
+    # AllowNoPassword is required for users with an empty password (e.g. SSH-key-only users)
+    - name: Configure phpMyAdmin to allow empty-password login
+      ansible.builtin.copy:
+        content: |
+          <?php
+          $cfg['Servers'][$i]['AllowNoPassword'] = TRUE;
+        dest: /etc/phpmyadmin/conf.d/allow-no-password.php
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Enable and start MariaDB
+      ansible.builtin.service:
+        enabled: true
+        name: mariadb
+        state: started
+
+    - name: Enable and start Apache2
+      ansible.builtin.service:
+        enabled: true
+        name: apache2
+        state: started
+
+    - name: Create MariaDB admin user
+      community.mysql.mysql_user:
+        check_implicit_admin: true
+        host: localhost
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        name: '{{ db_admin_user }}'
+        password: '{{ db_admin_password }}'
+        priv: '*.*:ALL,GRANT'
+        state: present
+        column_case_sensitive: false

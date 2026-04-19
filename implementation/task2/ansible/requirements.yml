@@ -1,3 +1,5 @@
 collections:
   - name: cloud.terraform
     version: 4.0.0
+  - name: community.mysql
+    version: 3.12.0

@@ -3,6 +3,12 @@ output "primary_ipv4" {
   value       = try(nutanix_virtual_machine_v2.this.nics[0].network_info[0].ipv4_config[0].ip_address[0].value, "")
 }
 
+output "user_password" {
+  description = "Password of the first additional user (empty string if not set)"
+  sensitive   = true
+  value       = try(var.additional_users[0].password, "")
+}
+
 output "vm_id" {
   description = "Unique identifier of the created VM resource"
   value       = nutanix_virtual_machine_v2.this.id
