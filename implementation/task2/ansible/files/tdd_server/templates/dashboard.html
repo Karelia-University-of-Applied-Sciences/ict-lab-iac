@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="30">
+  <title>TDD Lab — Progress Dashboard</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+    h1   { font-size: 1.4rem; margin-bottom: 0.25rem; }
+    p.hint { color: #666; font-size: 0.85rem; margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
+    th, td { padding: 0.6rem 1rem; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background: #f4f4f4; }
+    .pass { color: #2a7a2a; font-weight: bold; }
+    .fail { color: #b00; font-weight: bold; }
+    .all-pass { background: #eaffea; }
+    .has-fail  { background: #fff5f5; }
+  </style>
+</head>
+<body>
+  <h1>TDD Lab — Student Progress</h1>
+  <p class="hint">Auto-refreshes every 30 seconds.</p>
+  {% if rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>Student</th>
+        <th>Passed</th>
+        <th>Failed</th>
+        <th>Total</th>
+        <th>Last run</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr class="{{ 'all-pass' if row.failed == 0 else 'has-fail' }}">
+        <td>{{ row.student }}</td>
+        <td class="pass">{{ row.passed }}</td>
+        <td class="{{ 'fail' if row.failed > 0 else '' }}">{{ row.failed }}</td>
+        <td>{{ row.total }}</td>
+        <td>{{ row.updated }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>No results received yet. Students need to run <code>pytest</code> in <code>~/exercises</code>.</p>
+  {% endif %}
+</body>
+</html>

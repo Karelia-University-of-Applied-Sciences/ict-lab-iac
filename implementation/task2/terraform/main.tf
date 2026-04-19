@@ -65,7 +65,38 @@ resource "ansible_host" "vm" {
   variables = {
     ansible_host      = each.value.primary_ipv4
     ansible_user      = "ansible"
+    student_user      = each.key
     db_admin_user     = each.key
     db_admin_password = each.value.user_password
+  }
+}
+
+module "server_vm" {
+  depends_on = [module.project]
+
+  source = "../../terraform_modules/nutanix_vm"
+
+  admin_users          = var.admin_users
+  cluster_id           = local.cluster_id
+  disk_size_gb         = var.disk_size_gb
+  image_uuid           = var.image_uuid
+  memory_size_gb       = var.memory_size_gb
+  ngt_iso_uuid         = var.ngt_iso_uuid
+  num_cores_per_socket = var.num_cores_per_socket
+  num_sockets          = var.num_sockets
+  power_state          = var.power_state
+  project_id           = local.project_id
+  subnet_id            = local.subnet_id
+  ubuntu_ssh_keys      = var.ubuntu_ssh_keys
+
+  vm_name = "${var.vm_name_prefix}-server"
+}
+
+resource "ansible_host" "server" {
+  name   = module.server_vm.vm_name
+  groups = ["task2_server"]
+  variables = {
+    ansible_host = module.server_vm.primary_ipv4
+    ansible_user = "ansible"
   }
 }

@@ -1,0 +1,75 @@
+---
+- name: Set up TDD lab result server
+  hosts: task2_server
+  become: true
+
+  tasks:
+    - name: Install Python3, pip, and Flask
+      ansible.builtin.apt:
+        name:
+          - python3
+          - python3-pip
+          - python3-flask
+        state: present
+        update_cache: true
+
+    - name: Create /opt/tdd-lab directory
+      ansible.builtin.file:
+        path: /opt/tdd-lab
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Create /opt/tdd-lab/templates directory
+      ansible.builtin.file:
+        path: /opt/tdd-lab/templates
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Copy Flask application
+      ansible.builtin.copy:
+        src: files/tdd_server/app.py
+        dest: /opt/tdd-lab/app.py
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart tdd_lab
+
+    - name: Copy dashboard template
+      ansible.builtin.copy:
+        src: files/tdd_server/templates/dashboard.html
+        dest: /opt/tdd-lab/templates/dashboard.html
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart tdd_lab
+
+    - name: Install tdd_lab systemd service
+      ansible.builtin.copy:
+        src: files/tdd_server/tdd_lab.service
+        dest: /etc/systemd/system/tdd_lab.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify:
+        - Reload systemd
+        - Restart tdd_lab
+
+    - name: Enable and start tdd_lab service
+      ansible.builtin.service:
+        enabled: true
+        name: tdd_lab
+        state: started
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Restart tdd_lab
+      ansible.builtin.service:
+        name: tdd_lab
+        state: restarted

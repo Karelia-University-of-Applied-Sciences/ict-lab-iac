@@ -1,6 +1,6 @@
 ---
 - name: Install and configure Mosquitto MQTT broker
-  hosts: all
+  hosts: task2_vms
   become: true
   tasks:
     - name: Install mosquitto package

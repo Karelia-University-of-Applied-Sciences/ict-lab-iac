@@ -1,0 +1,12 @@
+[Unit]
+Description=TDD Lab result receiver
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/tdd-lab/app.py
+WorkingDirectory=/opt/tdd-lab
+Restart=on-failure
+Environment=TDD_DB=/opt/tdd-lab/results.db
+
+[Install]
+WantedBy=multi-user.target

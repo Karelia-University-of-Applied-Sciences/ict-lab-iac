@@ -1,6 +1,6 @@
 ---
 - name: Install and configure MariaDB and phpMyAdmin
-  hosts: all
+  hosts: task2_vms
   become: true
 
   tasks:

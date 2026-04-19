@@ -1,0 +1,97 @@
+---
+- name: Set up TDD lab environment for students
+  hosts: task2_vms
+  become: true
+
+  vars:
+    exercises_dir: '/home/{{ student_user }}/exercises'
+    # Resolve the server IP dynamically from the task2_server group in inventory
+    server_url: 'http://{{ hostvars[groups["task2_server"][0]]["ansible_host"] }}:5000'
+
+  tasks:
+    - name: Install Python3, pip, and pytest
+      ansible.builtin.apt:
+        name:
+          - python3
+          - python3-pip
+          - python3-pytest
+          - curl
+        state: present
+        update_cache: true
+
+    - name: Create exercises directory
+      ansible.builtin.file:
+        path: '{{ exercises_dir }}'
+        state: directory
+        owner: '{{ student_user }}'
+        group: '{{ student_user }}'
+        mode: '0755'
+
+    - name: Create exercises/exercises package directory
+      ansible.builtin.file:
+        path: '{{ exercises_dir }}/exercises'
+        state: directory
+        owner: '{{ student_user }}'
+        group: '{{ student_user }}'
+        mode: '0755'
+
+    - name: Create exercises/tests directory
+      ansible.builtin.file:
+        path: '{{ exercises_dir }}/tests'
+        state: directory
+        owner: '{{ student_user }}'
+        group: '{{ student_user }}'
+        mode: '0755'
+
+    - name: Deploy exercise placeholder files
+      ansible.builtin.copy:
+        src: files/tdd_student/exercises/
+        dest: '{{ exercises_dir }}/exercises/'
+        owner: '{{ student_user }}'
+        group: '{{ student_user }}'
+        mode: '0644'
+        force: false
+
+    - name: Deploy pre-written tests
+      ansible.builtin.copy:
+        src: files/tdd_student/tests/
+        dest: '{{ exercises_dir }}/tests/'
+        owner: '{{ student_user }}'
+        group: '{{ student_user }}'
+        mode: '0644'
+        force: false
+
+    - name: Deploy conftest.py
+      ansible.builtin.copy:
+        src: files/tdd_student/conftest.py
+        dest: '{{ exercises_dir }}/conftest.py'
+        owner: '{{ student_user }}'
+        group: '{{ student_user }}'
+        mode: '0644'
+
+    - name: Create exercises package __init__.py
+      ansible.builtin.file:
+        path: '{{ exercises_dir }}/exercises/__init__.py'
+        state: touch
+        owner: '{{ student_user }}'
+        group: '{{ student_user }}'
+        mode: '0644'
+        modification_time: preserve
+        access_time: preserve
+
+    - name: Create tests package __init__.py
+      ansible.builtin.file:
+        path: '{{ exercises_dir }}/tests/__init__.py'
+        state: touch
+        owner: '{{ student_user }}'
+        group: '{{ student_user }}'
+        mode: '0644'
+        modification_time: preserve
+        access_time: preserve
+
+    # Write SERVER_URL to /etc/environment so it is available in all login shells
+    - name: Set SERVER_URL in /etc/environment
+      ansible.builtin.lineinfile:
+        path: /etc/environment
+        regexp: '^SERVER_URL='
+        line: 'SERVER_URL={{ server_url }}'
