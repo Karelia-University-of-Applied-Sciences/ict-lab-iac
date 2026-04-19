@@ -61,7 +61,11 @@
       ansible.builtin.copy:
         content: |
           <?php
-          $cfg['Servers'][$i]['AllowNoPassword'] = TRUE;
+          if (isset($cfg['Servers'])) {
+              foreach (array_keys($cfg['Servers']) as $key) {
+                  $cfg['Servers'][$key]['AllowNoPassword'] = TRUE;
+              }
+          }
         dest: /etc/phpmyadmin/conf.d/allow-no-password.php
         owner: root
         group: root
