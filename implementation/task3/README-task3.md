@@ -83,11 +83,22 @@ ansible-playbook lb.yml     # Configure load balancer (requires CA to be ready)
 ## Verification
 
 ```bash
-# Hit the LB — response should alternate between web1 and web2
-curl -k https://<LB_IP>/
+# Download the CA certificate from the CA VM (served over HTTP by nginx)
+curl http://<CA_IP>/ca.crt -o ca.crt
+
+# Hit the LB with full certificate validation
+curl --cacert ca.crt https://<LB_IP>/
 
 # Verify a web server's certificate against the CA
-openssl verify -CAfile /tmp/task3_ca.crt /tmp/task3/<web-vm-hostname>.crt
+openssl verify -CAfile ca.crt /tmp/task3/<web-vm-hostname>.crt
+```
+
+To trust the CA in your browser or OS, import `ca.crt` into your trust store:
+
+```bash
+# Linux (system-wide)
+sudo cp ca.crt /usr/local/share/ca-certificates/task3-ca.crt
+sudo update-ca-certificates
 ```
 
 ## Certificate flow
