@@ -3,12 +3,8 @@
   hosts: task3_ca
   become: true
 
-  vars:
-    ca_cert: '{{ ca_dir }}/ca.crt'
-    ca_csr: '{{ ca_dir }}/ca.csr'
-    ca_dir: /etc/pki/ca
-    ca_key: '{{ ca_dir }}/ca.key'
-    controller_ca_cert: /tmp/task3_ca.crt
+  vars_files:
+    - vars/ca.yml
 
   tasks:
     - name: Install python3-cryptography package

@@ -3,24 +3,8 @@
   hosts: task3_web
   become: true
 
-  vars:
-    ca_host: '{{ groups[''task3_ca''][0] }}'
-    # Temp paths on the CA host (staging for signing)
-    ca_signed_cert: '/tmp/signed_{{ inventory_hostname }}.crt'
-    ca_staged_csr: '/tmp/sign_{{ inventory_hostname }}.csr'
-    # CA cert fetched to controller by ca.yml
-    controller_ca_cert: /tmp/task3_ca.crt
-    # Temp paths on the controller
-    controller_cert: '{{ controller_tmp_dir }}/{{ inventory_hostname }}.crt'
-    controller_csr: '{{ controller_tmp_dir }}/{{ inventory_hostname }}.csr'
-    controller_tmp_dir: /tmp/task3
-    # Temp CSR path on this host
-    host_csr: '/tmp/{{ inventory_hostname }}.csr'
-    # Paths in the nginx SSL directory on this host
-    ssl_ca_cert: '{{ ssl_dir }}/ca.crt'
-    ssl_cert: '{{ ssl_dir }}/server.crt'
-    ssl_dir: /etc/nginx/ssl
-    ssl_key: '{{ ssl_dir }}/server.key'
+  vars_files:
+    - vars/pki.yml
 
   tasks:
     - name: Install nginx and python3-cryptography

@@ -1,0 +1,9 @@
+---
+# Paths on the CA VM
+ca_cert: '{{ ca_dir }}/ca.crt'
+ca_csr: '{{ ca_dir }}/ca.csr'
+ca_dir: /etc/pki/ca
+ca_key: '{{ ca_dir }}/ca.key'
+
+# Path where the CA cert is fetched on the controller
+controller_ca_cert: /tmp/task3_ca.crt
