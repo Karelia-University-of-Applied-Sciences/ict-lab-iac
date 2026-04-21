@@ -21,7 +21,8 @@
         state: directory
         owner: root
         group: root
-        mode: '0700'
+        # 0711: root can list; others can traverse (needed for nginx to follow symlink)
+        mode: '0711'
 
     - name: Generate CA private key
       community.crypto.openssl_privatekey:
@@ -50,6 +51,8 @@
         privatekey_path: '{{ ca_key }}'
         provider: selfsigned
         selfsigned_not_after: '+3650d'
+        # CA cert is public; must be world-readable so nginx can serve it
+        mode: '0644'
 
     # Fetch to controller so web.yml and lb.yml can distribute it
     - name: Fetch CA certificate to controller
