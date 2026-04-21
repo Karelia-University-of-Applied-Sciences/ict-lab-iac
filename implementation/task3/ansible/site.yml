@@ -1,0 +1,12 @@
+---
+# Full deployment order: CA must be ready before web/LB fetch their signed certs.
+# web.yml and lb.yml can run in parallel if desired, but sequential is safer for first run.
+
+- name: Run ca.yml
+  ansible.builtin.import_playbook: ca.yml
+
+- name: Run web.yml
+  ansible.builtin.import_playbook: web.yml
+
+- name: Run lb.yml
+  ansible.builtin.import_playbook: lb.yml

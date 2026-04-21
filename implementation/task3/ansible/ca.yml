@@ -1,0 +1,54 @@
+---
+- name: Set up Root CA server
+  hosts: task3_ca
+  become: true
+
+  tasks:
+    - name: Install python3-cryptography package
+      ansible.builtin.apt:
+        name: python3-cryptography
+        state: present
+        update_cache: true
+
+    - name: Create CA directory
+      ansible.builtin.file:
+        path: /etc/pki/ca
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+
+    - name: Generate CA private key
+      community.crypto.openssl_privatekey:
+        path: /etc/pki/ca/ca.key
+        size: 4096
+        mode: '0600'
+
+    - name: Generate CA certificate signing request
+      community.crypto.openssl_csr:
+        path: /etc/pki/ca/ca.csr
+        privatekey_path: /etc/pki/ca/ca.key
+        common_name: 'Task3 Root CA'
+        # Mark this as a CA certificate capable of signing other certs
+        basic_constraints:
+          - 'CA:TRUE'
+        basic_constraints_critical: true
+        key_usage:
+          - keyCertSign
+          - cRLSign
+        key_usage_critical: true
+
+    - name: Generate self-signed CA certificate
+      community.crypto.x509_certificate:
+        path: /etc/pki/ca/ca.crt
+        privatekey_path: /etc/pki/ca/ca.key
+        csr_path: /etc/pki/ca/ca.csr
+        provider: selfsigned
+        selfsigned_not_after: '+3650d'
+
+    # Fetch to controller so web.yml and lb.yml can distribute it
+    - name: Fetch CA certificate to controller
+      ansible.builtin.fetch:
+        src: /etc/pki/ca/ca.crt
+        dest: /tmp/task3_ca.crt
+        flat: true

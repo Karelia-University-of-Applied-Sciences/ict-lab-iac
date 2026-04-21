@@ -1,0 +1,41 @@
+# Round-robin upstream pool — one entry per web server VM
+# Adding a name to var.web_server_names in Terraform and re-running Ansible
+# will automatically include the new VM here on the next ansible-playbook run.
+upstream task3_web {
+{% for host in groups['task3_web'] %}
+    server {{ hostvars[host]['ansible_host'] }}:443;
+{% endfor %}
+}
+
+# HTTPS load balancer — terminates TLS from clients, proxies to web backends over HTTPS
+server {
+    listen 443 ssl;
+    server_name _;
+
+    ssl_certificate     /etc/nginx/ssl/server.crt;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+
+    location / {
+        proxy_pass                    https://task3_web;
+
+        # Verify that backend certificates are signed by our own CA
+        proxy_ssl_trusted_certificate /etc/nginx/ssl/ca.crt;
+        proxy_ssl_verify              on;
+        proxy_ssl_verify_depth        2;
+        proxy_ssl_protocols           TLSv1.2 TLSv1.3;
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# Redirect plain HTTP to HTTPS
+server {
+    listen 80;
+    server_name _;
+    return 301 https://$host$request_uri;
+}

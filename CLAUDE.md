@@ -13,7 +13,7 @@ implementation/
   task_example/       # Template/reference task (Terraform only, modules commented out)
   task1/              # Terraform only — provisions VMs per student user
   task2/              # Terraform + Ansible — MQTT broker, MariaDB, per-student VMs
-  task3_meh/          # Terraform + Ansible — Apache Spark + JupyterLab cluster
+  task3/              # Terraform + Ansible — PKI Root CA + HTTPS load balancer + HTTPS web servers
   terraform_modules/
     nutanix_project/  # Reusable module: creates a Nutanix project
     nutanix_vm/       # Reusable module: provisions a VM with cloud-init user management
@@ -25,7 +25,7 @@ thesis_report/        # Code examples used in the written thesis
 ### Terraform
 
 - Provider: `nutanix/nutanix` (Prism Central API); TLS verification disabled (`insecure = true`) due to self-signed cert in the lab — this is a documented, intentional deviation.
-- Provider: `ansible/ansible` (task2) — writes Ansible inventory from Terraform state via `ansible_host` resources.
+- Provider: `ansible/ansible` (task2, task3) — writes Ansible inventory from Terraform state via `ansible_host` resources.
 - Modules live in `implementation/terraform_modules/` and are referenced with relative paths.
 - Sensitive vars (`nutanix_password`, `ubuntu_password`, etc.) are never committed; use `*.tfvars` files (git-ignored). See `*.tfvars.example` for required keys.
 - State files (`terraform.tfstate*`) are committed locally for lab continuity — **do not delete them**.
@@ -33,7 +33,7 @@ thesis_report/        # Code examples used in the written thesis
 
 ### Ansible
 
-- Inventory is dynamic: task2 uses `cloud.terraform.terraform_provider` plugin sourced from Terraform state.
+- Inventory is dynamic: task2 and task3 use `cloud.terraform.terraform_provider` plugin sourced from Terraform state.
 - Playbooks are in `implementation/taskN/ansible/`.
 - `ansible.cfg` sets `host_key_checking = False` and `interpreter_python = auto_silent` for lab convenience.
 - Use FQCN for all modules (e.g., `ansible.builtin.package`, `community.general.ufw`).
@@ -63,6 +63,12 @@ cd implementation/task2/ansible
 ansible -m ping all
 ansible-playbook mqtt.yml
 ansible-lint
+
+# Ansible (task3)
+cd implementation/task3/ansible
+ansible-galaxy collection install -r requirements.yml
+ansible -m ping all
+ansible-playbook site.yml   # deploys CA → web servers → load balancer
 ```
 
 ## What NOT to Do

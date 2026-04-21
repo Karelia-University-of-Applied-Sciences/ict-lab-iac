@@ -1,0 +1,125 @@
+---
+- name: Configure nginx load balancer with HTTPS and round-robin proxy
+  hosts: task3_lb
+  become: true
+
+  vars:
+    ca_host: '{{ groups[''task3_ca''][0] }}'
+    ssl_dir: /etc/nginx/ssl
+
+  tasks:
+    - name: Install nginx and python3-cryptography
+      ansible.builtin.apt:
+        name:
+          - nginx
+          - python3-cryptography
+        state: present
+        update_cache: true
+
+    - name: Create nginx SSL directory
+      ansible.builtin.file:
+        path: '{{ ssl_dir }}'
+        state: directory
+        owner: root
+        group: root
+        mode: '0750'
+
+    - name: Generate LB private key
+      community.crypto.openssl_privatekey:
+        path: '{{ ssl_dir }}/server.key'
+        size: 2048
+        mode: '0600'
+
+    - name: Generate CSR for load balancer
+      community.crypto.openssl_csr:
+        path: /tmp/{{ inventory_hostname }}.csr
+        privatekey_path: '{{ ssl_dir }}/server.key'
+        common_name: '{{ inventory_hostname }}'
+        subject_alt_name:
+          - 'IP:{{ ansible_host }}'
+
+    - name: Ensure local temp directory exists
+      ansible.builtin.file:
+        path: /tmp/task3
+        state: directory
+        mode: '0700'
+      delegate_to: localhost
+
+    - name: Fetch CSR to controller
+      ansible.builtin.fetch:
+        src: /tmp/{{ inventory_hostname }}.csr
+        dest: /tmp/task3/{{ inventory_hostname }}.csr
+        flat: true
+
+    - name: Copy CSR to CA for signing
+      ansible.builtin.copy:
+        src: /tmp/task3/{{ inventory_hostname }}.csr
+        dest: /tmp/sign_{{ inventory_hostname }}.csr
+        mode: '0644'
+      become: true
+      delegate_to: '{{ ca_host }}'
+
+    - name: Sign CSR on CA with ownca provider
+      community.crypto.x509_certificate:
+        path: /tmp/signed_{{ inventory_hostname }}.crt
+        csr_path: /tmp/sign_{{ inventory_hostname }}.csr
+        provider: ownca
+        ownca_path: /etc/pki/ca/ca.crt
+        ownca_privatekey_path: /etc/pki/ca/ca.key
+        ownca_not_after: '+365d'
+      become: true
+      delegate_to: '{{ ca_host }}'
+
+    - name: Fetch signed certificate from CA to controller
+      ansible.builtin.fetch:
+        src: /tmp/signed_{{ inventory_hostname }}.crt
+        dest: /tmp/task3/{{ inventory_hostname }}.crt
+        flat: true
+      become: true
+      delegate_to: '{{ ca_host }}'
+
+    - name: Copy signed certificate to load balancer
+      ansible.builtin.copy:
+        src: /tmp/task3/{{ inventory_hostname }}.crt
+        dest: '{{ ssl_dir }}/server.crt'
+        mode: '0644'
+
+    - name: Copy CA certificate to load balancer
+      ansible.builtin.copy:
+        src: /tmp/task3_ca.crt
+        dest: '{{ ssl_dir }}/ca.crt'
+        mode: '0644'
+
+    - name: Deploy nginx load balancer configuration
+      ansible.builtin.template:
+        src: templates/nginx-lb.conf.j2
+        dest: /etc/nginx/sites-available/task3-lb.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reload nginx
+
+    - name: Enable task3-lb nginx site
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/task3-lb.conf
+        dest: /etc/nginx/sites-enabled/task3-lb.conf
+        state: link
+      notify: Reload nginx
+
+    - name: Disable nginx default site
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: Reload nginx
+
+    - name: Enable and start nginx
+      ansible.builtin.service:
+        enabled: true
+        name: nginx
+        state: started
+
+  handlers:
+    - name: Reload nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded
