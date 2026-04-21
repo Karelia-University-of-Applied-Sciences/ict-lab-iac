@@ -44,6 +44,7 @@
         path: '{{ controller_tmp_dir }}'
         state: directory
         mode: '0700'
+      become: false
       delegate_to: localhost
 
     - name: Fetch CSR to controller
