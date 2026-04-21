@@ -34,8 +34,10 @@
         path: '{{ host_csr }}'
         privatekey_path: '{{ ssl_key }}'
         common_name: '{{ inventory_hostname }}'
-        # IP SAN allows the LB to verify the cert when connecting by IP
+        # DNS SAN: used by the LB to verify this cert by hostname
+        # IP SAN: retained for direct curl/browser access by IP
         subject_alt_name:
+          - 'DNS:{{ inventory_hostname }}'
           - 'IP:{{ ansible_host }}'
 
     # file module with state: directory is idempotent — safe to run per host

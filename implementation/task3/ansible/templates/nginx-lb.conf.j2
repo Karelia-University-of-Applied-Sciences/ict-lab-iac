@@ -1,16 +1,18 @@
-# Strip port from $upstream_addr (e.g. "10.0.0.1:443" -> "10.0.0.1") so that
-# proxy_ssl_name matches the IP SAN in each backend certificate.
-map $upstream_addr $upstream_ip {
-    ~^([^:]+):.*$ $1;
-    default         $upstream_addr;
+# Map the resolved IP (from $upstream_addr) back to the inventory hostname so
+# that proxy_ssl_name matches the DNS SAN in each backend certificate.
+map $upstream_addr $upstream_name {
+{% for host in groups['task3_web'] %}
+    ~^{{ hostvars[host]['ansible_host'] }}:.*$ {{ host }};
+{% endfor %}
+    default $upstream_addr;
 }
 
-# Round-robin upstream pool — one entry per web server VM
+# Round-robin upstream pool — uses hostnames so nginx resolves via /etc/hosts.
 # Adding a name to var.web_server_names in Terraform and re-running Ansible
 # will automatically include the new VM here on the next ansible-playbook run.
 upstream task3_web {
 {% for host in groups['task3_web'] %}
-    server {{ hostvars[host]['ansible_host'] }}:443;
+    server {{ host }}:443;
 {% endfor %}
 }
 
@@ -28,12 +30,12 @@ server {
         proxy_pass                    https://task3_web;
 
         # Verify that backend certificates are signed by our own CA.
-        # proxy_ssl_name is set to the bare IP so nginx verifies against the
-        # IP SAN in each backend cert rather than the upstream group name.
+        # proxy_ssl_name is set to the backend hostname (mapped from the resolved IP)
+        # so nginx verifies against the DNS SAN in each backend certificate.
         proxy_ssl_trusted_certificate /etc/nginx/ssl/ca.crt;
         proxy_ssl_verify              on;
         proxy_ssl_verify_depth        2;
-        proxy_ssl_name                $upstream_ip;
+        proxy_ssl_name                $upstream_name;
         proxy_ssl_protocols           TLSv1.2 TLSv1.3;
 
         proxy_set_header Host              $host;

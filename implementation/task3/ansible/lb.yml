@@ -34,7 +34,10 @@
         path: '{{ host_csr }}'
         privatekey_path: '{{ ssl_key }}'
         common_name: '{{ inventory_hostname }}'
+        # IP SAN: clients connect to LB by IP
+        # DNS SAN: retained for hostname-based access
         subject_alt_name:
+          - 'DNS:{{ inventory_hostname }}'
           - 'IP:{{ ansible_host }}'
 
     # file module with state: directory is idempotent — safe to run per host
@@ -90,6 +93,14 @@
         src: '{{ controller_ca_cert }}'
         dest: '{{ ssl_ca_cert }}'
         mode: '0644'
+
+    # Add web server hostnames to /etc/hosts so nginx can resolve them for upstream
+    - name: Add web server hostnames to /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: '{{ hostvars[item]["ansible_host"] }} {{ item }}'
+        state: present
+      loop: '{{ groups["task3_web"] }}'
 
     - name: Deploy nginx load balancer configuration
       ansible.builtin.template:
