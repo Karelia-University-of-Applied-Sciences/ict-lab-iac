@@ -39,6 +39,7 @@ thesis_report/        # Code examples used in the written thesis
 - Playbooks are in `implementation/taskN/ansible/`.
 - `ansible.cfg` sets `host_key_checking = False` and `interpreter_python = auto_silent` for lab convenience.
 - Use FQCN for all modules (e.g., `ansible.builtin.package`, `community.general.ufw`).
+- task3 uses `community.crypto` for all PKI operations (key generation, CSR, certificate signing). All PKI tasks are idempotent — safe to re-run.
 - Follow the style guide in `.claude/rules/ansible.instructions.md`.
 
 ### Style Rules

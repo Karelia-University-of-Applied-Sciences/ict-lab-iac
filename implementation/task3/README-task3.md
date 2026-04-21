@@ -47,8 +47,8 @@ The new VM is automatically included in the LB upstream block and receives its o
 
 ```bash
 cd implementation/task3/terraform
-terraform init
-terraform apply
+tofu init
+tofu apply
 ```
 
 ### 2. Install Ansible collections
@@ -69,6 +69,8 @@ ansible -m ping all
 ```bash
 ansible-playbook site.yml
 ```
+
+All playbooks are fully idempotent — re-running them is safe. `community.crypto` modules only regenerate keys and certificates if they don't already exist or have changed.
 
 Or run individual playbooks:
 

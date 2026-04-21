@@ -5,7 +5,22 @@
 
   vars:
     ca_host: '{{ groups[''task3_ca''][0] }}'
+    # Temp paths on the CA host (staging for signing)
+    ca_signed_cert: '/tmp/signed_{{ inventory_hostname }}.crt'
+    ca_staged_csr: '/tmp/sign_{{ inventory_hostname }}.csr'
+    # CA cert fetched to controller by ca.yml
+    controller_ca_cert: /tmp/task3_ca.crt
+    # Temp paths on the controller
+    controller_cert: '{{ controller_tmp_dir }}/{{ inventory_hostname }}.crt'
+    controller_csr: '{{ controller_tmp_dir }}/{{ inventory_hostname }}.csr'
+    controller_tmp_dir: /tmp/task3
+    # Temp CSR path on this host
+    host_csr: '/tmp/{{ inventory_hostname }}.csr'
+    # Paths in the nginx SSL directory on this host
+    ssl_ca_cert: '{{ ssl_dir }}/ca.crt'
+    ssl_cert: '{{ ssl_dir }}/server.crt'
     ssl_dir: /etc/nginx/ssl
+    ssl_key: '{{ ssl_dir }}/server.key'
 
   tasks:
     - name: Install nginx and python3-cryptography
@@ -26,43 +41,44 @@
 
     - name: Generate LB private key
       community.crypto.openssl_privatekey:
-        path: '{{ ssl_dir }}/server.key'
+        path: '{{ ssl_key }}'
         size: 2048
         mode: '0600'
 
     - name: Generate CSR for load balancer
       community.crypto.openssl_csr:
-        path: /tmp/{{ inventory_hostname }}.csr
-        privatekey_path: '{{ ssl_dir }}/server.key'
+        path: '{{ host_csr }}'
+        privatekey_path: '{{ ssl_key }}'
         common_name: '{{ inventory_hostname }}'
         subject_alt_name:
           - 'IP:{{ ansible_host }}'
 
+    # file module with state: directory is idempotent — safe to run per host
     - name: Ensure local temp directory exists
       ansible.builtin.file:
-        path: /tmp/task3
+        path: '{{ controller_tmp_dir }}'
         state: directory
         mode: '0700'
       delegate_to: localhost
 
     - name: Fetch CSR to controller
       ansible.builtin.fetch:
-        src: /tmp/{{ inventory_hostname }}.csr
-        dest: /tmp/task3/{{ inventory_hostname }}.csr
+        src: '{{ host_csr }}'
+        dest: '{{ controller_csr }}'
         flat: true
 
     - name: Copy CSR to CA for signing
       ansible.builtin.copy:
-        src: /tmp/task3/{{ inventory_hostname }}.csr
-        dest: /tmp/sign_{{ inventory_hostname }}.csr
+        src: '{{ controller_csr }}'
+        dest: '{{ ca_staged_csr }}'
         mode: '0644'
       become: true
       delegate_to: '{{ ca_host }}'
 
     - name: Sign CSR on CA with ownca provider
       community.crypto.x509_certificate:
-        path: /tmp/signed_{{ inventory_hostname }}.crt
-        csr_path: /tmp/sign_{{ inventory_hostname }}.csr
+        path: '{{ ca_signed_cert }}'
+        csr_path: '{{ ca_staged_csr }}'
         provider: ownca
         ownca_path: /etc/pki/ca/ca.crt
         ownca_privatekey_path: /etc/pki/ca/ca.key
@@ -72,22 +88,22 @@
 
     - name: Fetch signed certificate from CA to controller
       ansible.builtin.fetch:
-        src: /tmp/signed_{{ inventory_hostname }}.crt
-        dest: /tmp/task3/{{ inventory_hostname }}.crt
+        src: '{{ ca_signed_cert }}'
+        dest: '{{ controller_cert }}'
         flat: true
       become: true
       delegate_to: '{{ ca_host }}'
 
     - name: Copy signed certificate to load balancer
       ansible.builtin.copy:
-        src: /tmp/task3/{{ inventory_hostname }}.crt
-        dest: '{{ ssl_dir }}/server.crt'
+        src: '{{ controller_cert }}'
+        dest: '{{ ssl_cert }}'
         mode: '0644'
 
     - name: Copy CA certificate to load balancer
       ansible.builtin.copy:
-        src: /tmp/task3_ca.crt
-        dest: '{{ ssl_dir }}/ca.crt'
+        src: '{{ controller_ca_cert }}'
+        dest: '{{ ssl_ca_cert }}'
         mode: '0644'
 
     - name: Deploy nginx load balancer configuration
