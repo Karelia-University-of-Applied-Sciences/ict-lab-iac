@@ -4,7 +4,7 @@ This file provides guidance for AI assistants (Claude, Copilot, etc.) working wi
 
 ## Project Overview
 
-Thesis project demonstrating Infrastructure-as-Code (IaC) using **Terraform** and **Ansible** on a Nutanix virtualization platform. The repository contains multiple implementation tasks of increasing complexity.
+Thesis project demonstrating Infrastructure-as-Code (IaC) using **OpenTofu** (Terraform-compatible, binary: `tofu`) and **Ansible** on a Nutanix virtualization platform. The repository contains multiple implementation tasks of increasing complexity.
 
 ## Repository Structure
 
@@ -22,14 +22,16 @@ thesis_report/        # Code examples used in the written thesis
 
 ## Key Conventions
 
-### Terraform
+### Terraform / OpenTofu
+
+- **OpenTofu** is used instead of Terraform; the binary is `tofu` (installed at `/usr/bin/tofu`). Configuration syntax and providers are identical to Terraform.
 
 - Provider: `nutanix/nutanix` (Prism Central API); TLS verification disabled (`insecure = true`) due to self-signed cert in the lab — this is a documented, intentional deviation.
 - Provider: `ansible/ansible` (task2, task3) — writes Ansible inventory from Terraform state via `ansible_host` resources.
 - Modules live in `implementation/terraform_modules/` and are referenced with relative paths.
 - Sensitive vars (`nutanix_password`, `ubuntu_password`, etc.) are never committed; use `*.tfvars` files (git-ignored). See `*.tfvars.example` for required keys.
 - State files (`terraform.tfstate*`) are committed locally for lab continuity — **do not delete them**.
-- Run `terraform fmt` and `terraform validate` before committing.
+- Run `tofu fmt` and `tofu validate` before committing.
 
 ### Ansible
 
@@ -51,12 +53,12 @@ All environment-specific values (Prism Central endpoint, cluster/subnet/image UU
 ## Common Commands
 
 ```bash
-# Terraform
+# OpenTofu (Terraform-compatible)
 cd implementation/taskN/terraform
-terraform init
-terraform plan
-terraform apply
-terraform fmt -recursive
+tofu init
+tofu plan
+tofu apply
+tofu fmt -recursive
 
 # Ansible (task2)
 cd implementation/task2/ansible
