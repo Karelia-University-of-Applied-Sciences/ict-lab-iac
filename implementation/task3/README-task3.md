@@ -67,7 +67,7 @@ ansible -m ping all
 ### 4. Deploy the full stack
 
 ```bash
-ansible-playbook site.yml
+ansible-playbook playbooks/site.yml
 ```
 
 All playbooks are fully idempotent — re-running them is safe. `community.crypto` modules only regenerate keys and certificates if they don't already exist or have changed.
@@ -75,9 +75,10 @@ All playbooks are fully idempotent — re-running them is safe. `community.crypt
 Or run individual playbooks:
 
 ```bash
-ansible-playbook ca.yml     # Set up Root CA
-ansible-playbook web.yml    # Configure web servers (requires CA to be ready)
-ansible-playbook lb.yml     # Configure load balancer (requires CA to be ready)
+ansible-playbook playbooks/ca.yml     # Set up Root CA
+ansible-playbook playbooks/web.yml    # Configure web servers (requires CA to be ready)
+ansible-playbook playbooks/lb.yml     # Configure load balancer (requires CA to be ready)
+ansible-playbook playbooks/renew.yml  # Renew certs expiring within 30 days
 ```
 
 ## Verification

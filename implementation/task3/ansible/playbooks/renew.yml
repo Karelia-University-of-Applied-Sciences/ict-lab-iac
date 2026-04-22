@@ -12,7 +12,7 @@
   become: true
 
   vars_files:
-    - vars/pki.yml
+    - ../vars/pki.yml
 
   tasks:
     - name: Check certificate expiry

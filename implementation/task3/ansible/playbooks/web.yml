@@ -1,10 +1,10 @@
 ---
-- name: Configure nginx load balancer with HTTPS and round-robin proxy
-  hosts: task3_lb
+- name: Configure web servers with HTTPS and unique pages
+  hosts: task3_web
   become: true
 
   vars_files:
-    - vars/pki.yml
+    - ../vars/pki.yml
 
   tasks:
     - name: Install nginx and python3-cryptography
@@ -23,19 +23,19 @@
         group: root
         mode: '0750'
 
-    - name: Generate LB private key
+    - name: Generate server private key
       community.crypto.openssl_privatekey:
         path: '{{ ssl_key }}'
         size: 2048
         mode: '0600'
 
-    - name: Generate CSR for load balancer
+    - name: Generate CSR for web server
       community.crypto.openssl_csr:
         path: '{{ host_csr }}'
         privatekey_path: '{{ ssl_key }}'
         common_name: '{{ inventory_hostname }}'
-        # IP SAN: clients connect to LB by IP
-        # DNS SAN: retained for hostname-based access
+        # DNS SAN: used by the LB to verify this cert by hostname
+        # IP SAN: retained for direct curl/browser access by IP
         subject_alt_name:
           - 'DNS:{{ inventory_hostname }}'
           - 'IP:{{ ansible_host }}'
@@ -82,39 +82,31 @@
       become: true
       delegate_to: '{{ ca_host }}'
 
-    - name: Copy signed certificate to load balancer
+    - name: Copy signed certificate to web server
       ansible.builtin.copy:
         src: '{{ controller_cert }}'
         dest: '{{ ssl_cert }}'
         mode: '0644'
 
-    - name: Copy CA certificate to load balancer
+    - name: Copy CA certificate to web server
       ansible.builtin.copy:
         src: '{{ controller_ca_cert }}'
         dest: '{{ ssl_ca_cert }}'
         mode: '0644'
 
-    # Add web server hostnames to /etc/hosts so nginx can resolve them for upstream
-    - name: Add web server hostnames to /etc/hosts
-      ansible.builtin.lineinfile:
-        path: /etc/hosts
-        line: '{{ hostvars[item]["ansible_host"] }} {{ item }}'
-        state: present
-      loop: '{{ groups["task3_web"] }}'
-
-    - name: Deploy nginx load balancer configuration
+    - name: Deploy nginx HTTPS configuration
       ansible.builtin.template:
-        src: templates/nginx-lb.conf.j2
-        dest: /etc/nginx/sites-available/task3-lb.conf
+        src: ../templates/nginx-web.conf.j2
+        dest: /etc/nginx/sites-available/task3.conf
         owner: root
         group: root
         mode: '0644'
       notify: Reload nginx
 
-    - name: Enable task3-lb nginx site
+    - name: Enable task3 nginx site
       ansible.builtin.file:
-        src: /etc/nginx/sites-available/task3-lb.conf
-        dest: /etc/nginx/sites-enabled/task3-lb.conf
+        src: /etc/nginx/sites-available/task3.conf
+        dest: /etc/nginx/sites-enabled/task3.conf
         state: link
       notify: Reload nginx
 
@@ -123,6 +115,20 @@
         path: /etc/nginx/sites-enabled/default
         state: absent
       notify: Reload nginx
+
+    # server_name is set by Terraform as an ansible_host variable
+    - name: Deploy unique index.html
+      ansible.builtin.copy:
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head><title>{{ server_name }}</title></head>
+          <body><h1>Hello from {{ server_name }}!</h1></body>
+          </html>
+        dest: /var/www/html/index.html
+        owner: root
+        group: root
+        mode: '0644'
 
     - name: Enable and start nginx
       ansible.builtin.service:
