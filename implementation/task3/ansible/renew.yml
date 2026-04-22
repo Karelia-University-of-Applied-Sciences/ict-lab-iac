@@ -1,0 +1,55 @@
+---
+# Certificate renewal play for web servers and load balancer.
+#
+# Normal run — renews certs expiring within 30 days:
+#   ansible-playbook renew.yml
+#
+# Force renewal regardless of expiry (e.g. after CA rotation):
+#   ansible-playbook renew.yml -e force_renew=true
+#
+# After removing expiring certs, web.yml and lb.yml are imported to run the
+# full sign → deploy → reload pipeline. Hosts that did not need renewal are
+# unaffected — the imported plays are no-ops for them.
+
+- name: Remove expiring certificates
+  hosts: task3_web:task3_lb
+  become: true
+
+  vars_files:
+    - vars/pki.yml
+
+  tasks:
+    - name: Check certificate expiry
+      community.crypto.x509_certificate_info:
+        path: '{{ ssl_cert }}'
+        valid_at:
+          thirty_days: '+30d'
+      register: cert_info
+      # Certificate may not exist on a fresh host
+      ignore_errors: true
+
+    - name: Mark certificate for renewal
+      ansible.builtin.set_fact:
+        needs_renewal: >-
+          {{ force_renew | default(false) | bool
+             or cert_info is failed
+             or not cert_info.valid_at.thirty_days }}
+
+    # Remove deployed cert — web.yml/lb.yml will re-sign and re-deploy it
+    - name: Remove deployed certificate
+      ansible.builtin.file:
+        path: '{{ ssl_cert }}'
+        state: absent
+      when: needs_renewal
+
+    # Remove CA-staged signed cert so x509_certificate re-signs rather than skips
+    - name: Remove CA-staged signed certificate
+      ansible.builtin.file:
+        path: '{{ ca_signed_cert }}'
+        state: absent
+      become: true
+      delegate_to: '{{ ca_host }}'
+      when: needs_renewal
+
+- import_playbook: web.yml
+- import_playbook: lb.yml
