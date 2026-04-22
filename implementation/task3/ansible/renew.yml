@@ -6,12 +6,8 @@
 #
 # Force renewal regardless of expiry (e.g. after CA rotation):
 #   ansible-playbook renew.yml -e force_renew=true
-#
-# After removing expiring certs, web.yml and lb.yml are imported to run the
-# full sign → deploy → reload pipeline. Hosts that did not need renewal are
-# unaffected — the imported plays are no-ops for them.
 
-- name: Remove expiring certificates
+- name: Renew expiring certificates
   hosts: task3_web:task3_lb
   become: true
 
@@ -35,21 +31,70 @@
              or cert_info is failed
              or not cert_info.valid_at.thirty_days }}
 
-    # Remove deployed cert — web.yml/lb.yml will re-sign and re-deploy it
-    - name: Remove deployed certificate
-      ansible.builtin.file:
-        path: '{{ ssl_cert }}'
-        state: absent
-      when: needs_renewal
-
-    # Remove CA-staged signed cert so x509_certificate re-signs rather than skips
+    # Remove CA-staged cert so x509_certificate re-signs rather than skips
     - name: Remove CA-staged signed certificate
       ansible.builtin.file:
         path: '{{ ca_signed_cert }}'
         state: absent
+      delegate_to: '{{ ca_host }}'
+      when: needs_renewal
+
+    - name: Ensure local temp directory exists
+      ansible.builtin.file:
+        path: '{{ controller_tmp_dir }}'
+        state: directory
+        mode: '0700'
+      become: false
+      delegate_to: localhost
+      when: needs_renewal
+
+    - name: Fetch CSR to controller
+      ansible.builtin.fetch:
+        src: '{{ host_csr }}'
+        dest: '{{ controller_csr }}'
+        flat: true
+      when: needs_renewal
+
+    - name: Copy CSR to CA for signing
+      ansible.builtin.copy:
+        src: '{{ controller_csr }}'
+        dest: '{{ ca_staged_csr }}'
+        mode: '0644'
       become: true
       delegate_to: '{{ ca_host }}'
       when: needs_renewal
 
-- import_playbook: web.yml
-- import_playbook: lb.yml
+    - name: Sign CSR on CA with ownca provider
+      community.crypto.x509_certificate:
+        path: '{{ ca_signed_cert }}'
+        csr_path: '{{ ca_staged_csr }}'
+        provider: ownca
+        ownca_path: /etc/pki/ca/ca.crt
+        ownca_privatekey_path: /etc/pki/ca/ca.key
+        ownca_not_after: '+365d'
+      become: true
+      delegate_to: '{{ ca_host }}'
+      when: needs_renewal
+
+    - name: Fetch signed certificate from CA to controller
+      ansible.builtin.fetch:
+        src: '{{ ca_signed_cert }}'
+        dest: '{{ controller_cert }}'
+        flat: true
+      become: true
+      delegate_to: '{{ ca_host }}'
+      when: needs_renewal
+
+    - name: Deploy renewed certificate
+      ansible.builtin.copy:
+        src: '{{ controller_cert }}'
+        dest: '{{ ssl_cert }}'
+        mode: '0644'
+      notify: Reload nginx
+      when: needs_renewal
+
+  handlers:
+    - name: Reload nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded
