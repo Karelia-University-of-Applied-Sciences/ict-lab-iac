@@ -104,7 +104,7 @@
 
     - name: Deploy nginx load balancer configuration
       ansible.builtin.template:
-        src: ../templates/nginx-lb.conf.j2
+        src: nginx-lb.conf.j2
         dest: /etc/nginx/sites-available/task3-lb.conf
         owner: root
         group: root
