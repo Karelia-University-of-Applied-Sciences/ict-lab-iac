@@ -1,4 +1,4 @@
-# Task 3 — PKI + HTTPS Load Balancer
+# Task3: PKI + HTTPS Load Balancer
 
 Demonstrates a full PKI trust chain using Terraform and Ansible on Nutanix:
 a Root CA signs certificates for all VMs, an nginx load balancer terminates HTTPS
