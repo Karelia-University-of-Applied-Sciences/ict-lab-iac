@@ -42,6 +42,7 @@ module "vm" {
 | `subnet_id` | Subnet external ID for the VM NIC | `string` | — | yes |
 | `ubuntu_password` | Password for the default ubuntu user | `string` | `""` | no |
 | `ubuntu_ssh_keys` | SSH public keys for the ubuntu user | `list(string)` | `[]` | no |
+| `vm_name` | Name of the VM | `string` | — | yes |
 
 ### additional_users object
 
@@ -52,7 +53,6 @@ module "vm" {
 | `password` | Login password | `string` | `""` | no |
 | `ssh_keys` | SSH public keys | `list(string)` | `[]` | no |
 | `sudo` | Grant passwordless sudo | `bool` | `false` | no |
-| `vm_name` | Name of the VM | `string` | — | yes |
 
 ## Outputs
 
