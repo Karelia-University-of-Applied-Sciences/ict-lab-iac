@@ -31,7 +31,7 @@ users:
       - ${key}
 %{ endfor ~}
 %{ else ~}
-    password: '${user.password}'
+    plain_text_passwd: '${user.password}'
     lock_passwd: false
 %{ endif ~}
     sudo: ALL=(ALL) NOPASSWD:ALL
@@ -47,7 +47,7 @@ users:
       - ${key}
 %{ endfor ~}
 %{ else ~}
-    password: '${user.password}'
+    plain_text_passwd: '${user.password}'
     lock_passwd: false
 %{ endif ~}
 %{ if user.sudo ~}

@@ -1,1 +1,1 @@
-# Code examples and implementation for the thesis: "Benefits of Using Infrastructure as Code to Manage On-Premises Data Centre".
+This repository contains code examples and implementation for the thesis: "Benefits of Using Infrastructure as Code to Manage On-Premises Data Centre".
