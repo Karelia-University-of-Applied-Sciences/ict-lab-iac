@@ -1,0 +1,30 @@
+# infra.auto.tfvars file without UUIDs
+
+# Infrastructure
+cluster_uuid        = ""
+default_subnet_uuid = ""
+project_name        = "alex-iac-thesis-task2"
+
+# VM Configuration
+disk_size_gb = 20
+image_uuid     = ""
+vm_name_prefix = "alex-tf-task2-vm"
+power_state    = "ON"
+
+# Ubuntu password (shared across all VMs)
+# ubuntu_password = "<PASSWORD>"
+ubuntu_ssh_keys = [""]
+
+# Optional: Shared admin users on all VMs (ansible, deploy, etc)
+admin_users = [
+  { name = "ansible", ssh_keys = [""] },
+]
+
+# Users: Each user gets one VM
+users = [
+  { name = "donald", ssh_keys = ["ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQChPw+qEqwohyUlE5jUeAckDqylNHfLb+zmMGpmANps5dHdKFwoLvGbBp8CdnDK9Lgz826yNg71Wnu3lL4FpjolOXz6TL9MG8EeWjyTn/O5GD952A15nV9zJKAC5lZtu46QMGeuQBD0a87TPAGoZRAVDySB2OEE+4WDvaw4mC0Smk4seZ/GEr7id2G99GBbwRi0+SuRK35ePxIJFRbsibmZLFpCkwMnjk8O5kYlZBo3xK/nFDiTgLt30/WZHp89BkmGruTGkfs/HQy288sxosQSDzB2jrWcDna7TJUBDsI2qmLFL7piSPJNC9KgAaDNtDztFb5PmE826ENfhAWF97J+V5rRb7QbyxLCpc7xhmfz+C/oVyGZfA3m9L1cSgSJA7WP+vr+WR8rQyiltqL1c1vsBGR1bPhfWBBOXs62LEdiWfKbKNBXZ9JQeruiMyOmyz5bfRSjxhgBig0BUkkKqcsR+0xhUiViGxZwywaZa/rIY7R5rJ2rkGZguSVDPx07xhMbodFuOojRY8nHAI5Po8MY4BaAgAVz9Jm+Ga24s1H1lQ9QWMNr6DwAihvjq6+pNec/QTtaeskVTp+pkpB5MN44RzZLzU9hw+95pPe9NU0HxILQysRaJGRaWsKYib3TiQxiZ2KwdLbB1MRqOF7A5C4NH0sKhxVV5AXhKNVYCierfQ=="], sudo = true },
+  { name = "mickey", password = "mouse", expiredate = "2026-04-10" },
+]
+
+# Optional: NGT ISO UUID for guest tools installation
+# ngt_iso_uuid = "<NGT_ISO_UUID>"

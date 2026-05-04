@@ -1,0 +1,27 @@
+# infra.auto.tfvars file without UUIDs
+
+# Infrastructure
+cluster_uuid        = ""
+default_subnet_uuid = ""
+project_name        = "alex-iac-thesis-task3"
+
+# VM Configuration
+disk_size_gb = 20
+image_uuid     = ""
+vm_name_prefix = "alex-tf-task3-vm"
+power_state    = "ON"
+
+# Ubuntu password (shared across all VMs)
+# ubuntu_password = "<PASSWORD>"
+ubuntu_ssh_keys = [""]
+
+# Optional: Shared admin users on all VMs (ansible, deploy, etc)
+admin_users = [
+  { name = "ansible", ssh_keys = [""] },
+]
+
+# Web server pool — add names here to scale out; each name provisions one VM
+web_server_names = ["web1", "web2"]
+
+# Optional: NGT ISO UUID for guest tools installation
+# ngt_iso_uuid = "<NGT_ISO_UUID>"

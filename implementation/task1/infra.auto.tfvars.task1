@@ -1,0 +1,28 @@
+# infra.auto.tfvars file without UUIDs
+
+# Infrastructure
+cluster_uuid        = ""
+default_subnet_uuid = ""
+project_name        = "alex-iac-thesis-task1"
+
+# VM Configuration
+disk_size_gb = 20
+image_uuid     = ""
+vm_name_prefix = "alex-tf-task1-vm"
+power_state    = "ON"
+
+# Ubuntu password (shared across all VMs)
+# ubuntu_password = "ubuntu_default_pass"
+ubuntu_ssh_keys = [""]
+
+additional_users_expiredate = "2026-05-10"
+
+# Users: Each user gets one VM
+users = [
+  { name = "morpheus", password = "morpheus_pass_456" },
+  { name = "neo", password = "neo_pass_123", sudo = true },
+  { name = "trinity", password = "trinity_pass_789", sudo = false },
+]
+
+# Optional: NGT ISO UUID for guest tools installation
+# ngt_iso_uuid = "ngt-iso-uuid-here"

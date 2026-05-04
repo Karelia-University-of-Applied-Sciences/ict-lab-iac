@@ -6,16 +6,21 @@ from clients and proxies traffic to HTTPS-only web backends.
 
 ## Architecture
 
-```
-Client
-  │  HTTPS (443)
-  ▼
-VM 2 · Load Balancer (nginx)
-  │  HTTPS (443) — verifies backend certs against CA
-  ├──► VM 3 · web1 (nginx, "Hello from web1!")
-  └──► VM 4 · web2 (nginx, "Hello from web2!")
+```mermaid
+graph TD
+    Client -->|HTTPS 443| LB
 
-VM 1 · Root CA (signs CSRs, never exposed to clients)
+    CA[VM 1 · Root CA\ntask3_ca]
+    LB[VM 2 · Load Balancer - nginx\ntask3_lb]
+    W1[VM 3 · web1 - nginx\ntask3_web]
+    W2[VM 4 · web2 - nginx\ntask3_web]
+
+    CA -->|signs cert| LB
+    CA -->|signs cert| W1
+    CA -->|signs cert| W2
+
+    LB -->|HTTPS 443 round-robin| W1
+    LB -->|HTTPS 443 round-robin| W2
 ```
 
 | VM | Role | Ansible Group |
