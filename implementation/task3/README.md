@@ -6,21 +6,31 @@ from clients and proxies traffic to HTTPS-only web backends.
 
 ## Architecture
 
+### LB
 ```mermaid
 graph TD
     Client -->|HTTPS 443| LB
 
-    CA[VM 1 · Root CA\ntask3_ca]
-    LB[VM 2 · Load Balancer - nginx\ntask3_lb]
-    W1[VM 3 · web1 - nginx\ntask3_web]
-    W2[VM 4 · web2 - nginx\ntask3_web]
+    CA[VM 1 · Root CA<br>ca.yml]
+    LB[VM 2 · Load Balancer - nginx<br>lb.yml]
+    W1[VM 3 · web1 - nginx<br>web.yml]
+    W2[VM 4 · web2 - nginx<br>web.yml]
+
+    LB -->|HTTPS 443 round-robin| W1
+    LB -->|HTTPS 443 round-robin| W2
+```
+
+### PKI
+```mermaid
+graph LR
+    CA[VM 1 · Root CA]
+    LB[VM 2 · Load Balancer - nginx]
+    W1[VM 3 · web1 - nginx]
+    W2[VM 4 · web2 - nginx]
 
     CA -->|signs cert| LB
     CA -->|signs cert| W1
     CA -->|signs cert| W2
-
-    LB -->|HTTPS 443 round-robin| W1
-    LB -->|HTTPS 443 round-robin| W2
 ```
 
 | VM | Role | Ansible Group |
@@ -28,6 +38,107 @@ graph TD
 | `*-ca` | Root CA — signs all CSRs | `task3_ca` |
 | `*-lb` | nginx load balancer — HTTPS round-robin | `task3_lb` |
 | `*-web1`, `*-web2`, … | nginx web servers — unique HTTPS pages | `task3_web` |
+
+## Ansible playbooks workflow
+### PKI
+```mermaid
+flowchart TD
+    subgraph CA["VM 1 · Root CA  (ca.yml)"]
+        CA_KEY["Generate RSA 4096 key"]
+        CA_CSR_N["Generate CA CSR<br>CA:TRUE · keyCertSign"]
+        CA_CERT["Self-sign certificate<br>+3650 days  (ca.crt)"]
+        CA_HTTP["nginx serves ca.crt<br>over HTTP :80"]
+        CA_SIGN["Sign host CSR<br>with ownca · +365 days"]
+
+        CA_KEY --> CA_CSR_N --> CA_CERT --> CA_HTTP
+    end
+
+    CTL(["Ansible Controller<br>/tmp/task3/"])
+
+    subgraph LB["VM 2 · Load Balancer  (lb.yml)"]
+        LB_KEY["Generate RSA 2048 key"]
+        LB_CSR["Generate CSR<br>SAN: DNS + IP"]
+        LB_DEPLOY["nginx HTTPS :443<br>host.crt + ca.crt"]
+
+        LB_KEY --> LB_CSR
+    end
+
+    subgraph WEB["VM 3/4 · Web Servers  (web.yml)"]
+        W_KEY["Generate RSA 2048 key"]
+        W_CSR["Generate CSR<br>SAN: DNS + IP"]
+        W_DEPLOY["nginx HTTPS :443<br>host.crt + ca.crt"]
+
+        W_KEY --> W_CSR
+    end
+
+    CA_CERT -->|"fetch ca.crt"| CTL
+    LB_CSR -->|"fetch CSR"| CTL
+    W_CSR  -->|"fetch CSR"| CTL
+    CTL    -->|"copy CSR to CA"| CA_SIGN
+    CA_SIGN -->|"fetch signed cert"| CTL
+    CTL -->|"copy cert + ca.crt"| LB_DEPLOY
+    CTL -->|"copy cert + ca.crt"| W_DEPLOY
+```
+
+### Web server configuration
+```mermaid
+flowchart LR
+    subgraph WEB["VM 3/4 · Web Servers  (web.yml)"]
+        direction TB
+        W_CONF["Deploy nginx-web.conf.j2<br>listen 443 ssl"]
+        W_IDX["Deploy unique index.html<br>per-host backend page"]
+        W_UP["nginx HTTPS :443 active"]
+
+        W_CONF --> W_IDX --> W_UP    
+    end
+
+    CTL(["Ansible Controller"])
+
+    subgraph LB["VM 2 · Load Balancer  (lb.yml)"]
+        direction TB
+        LB_HOSTS["/etc/hosts populated"]
+        LB_CONF["nginx-lb.conf.j2 rendered"]
+        LB_UP["nginx HTTPS :443 active<br>round-robin proxy to upstream"]
+
+        LB_HOSTS --> LB_CONF --> LB_UP
+    end
+
+    LB <--> |"render upstream<br>block"| CTL
+    CTL --> |"hostnames<br>IPs"| WEB
+```
+
+### Certificate renewal (renew.yml)
+```mermaid
+flowchart TD
+    CHECK["Check cert expiry<br>x509_certificate_info"]
+    DECISION{{"needs_renewal?<br>expiry &lt; 30 days<br>OR force_renew=true<br>OR cert missing"}}
+    SKIP["Skip — cert still valid"]
+
+    CHECK --> DECISION
+    DECISION -->|no| SKIP
+    DECISION -->|yes| RM
+
+    subgraph CA["VM 1 · Root CA"]
+        RM["Remove old staged cert<br>so CA re-signs"]
+        SIGN["Sign CSR with ownca<br>+365 days"]
+        RM --> SIGN
+    end
+
+    subgraph HOST["VM 2/3/4 · LB + Web Servers"]
+        CSR["Existing CSR<br>(key unchanged)"]
+        DEPLOY["Deploy renewed cert"]
+        RELOAD["Reload nginx"]
+        DEPLOY --> RELOAD
+    end
+
+    CTL(["Ansible Controller"])
+
+    DECISION -->|yes| CSR
+    CSR -->|"fetch CSR"| CTL
+    CTL -->|"copy CSR to CA"| RM
+    SIGN -->|"fetch signed cert"| CTL
+    CTL -->|"copy cert"| DEPLOY
+```
 
 ## Scaling the web tier
 

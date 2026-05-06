@@ -19,7 +19,7 @@
       community.crypto.x509_certificate_info:
         path: '{{ ssl_cert }}'
         valid_at:
-          thirty_days: '+3000d' # made this big to ensure the change
+          thirty_days: '+30d'
       register: cert_info
       # Certificate may not exist on a fresh host
       ignore_errors: true
